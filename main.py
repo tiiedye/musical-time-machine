@@ -10,14 +10,6 @@ load_dotenv()
 SP_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SP_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 
-year = input("What year would you like to travel to? (YYYY-MM-DD format): ")
-
-response = requests.get(f"https://www.billboard.com/charts/hot-100/{year}")
-webpage = response.text
-soup = BeautifulSoup(webpage, "html.parser")
-
-songs = [title.getText().strip('\n') for title in soup.find_all(name="h3", id="title-of-a-story", class_="a-no-trucate")]
-
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     client_id=SP_CLIENT_ID,
     client_secret=SP_CLIENT_SECRET,
@@ -28,3 +20,22 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
 ))
 
 user_id = sp.current_user()["id"]
+
+user_input = input("What user_input would you like to travel to? (YYYY-MM-DD format): ")
+
+response = requests.get(f"https://www.billboard.com/charts/hot-100/{user_input}")
+webpage = response.text
+soup = BeautifulSoup(webpage, "html.parser")
+
+songs = [title.getText().strip('\n') for title in soup.find_all(name="h3", id="title-of-a-story", class_="a-no-trucate")]
+
+song_uris = []
+year = user_input.split('-')[0]
+for song in songs:
+    result = sp.search(q=f"track:{song} year:{year}", type="track")
+    print(result)
+    try:
+        uri = result["tracks"]["items"][0]["uri"]
+        song_uris.append(uri)
+    except IndexError:
+        print(f"{song} doesn't exist on Spotify. Skipped")
