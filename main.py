@@ -18,24 +18,26 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     show_dialog=True,
     cache_path="token.txt"
 ))
-
 user_id = sp.current_user()["id"]
 
-user_input = input("What user_input would you like to travel to? (YYYY-MM-DD format): ")
+date = input("What date would you like to travel to? (YYYY-MM-DD format): ")
 
-response = requests.get(f"https://www.billboard.com/charts/hot-100/{user_input}")
+response = requests.get(f"https://www.billboard.com/charts/hot-100/{date}")
 webpage = response.text
 soup = BeautifulSoup(webpage, "html.parser")
 
 songs = [title.getText().strip('\n') for title in soup.find_all(name="h3", id="title-of-a-story", class_="a-no-trucate")]
-
 song_uris = []
-year = user_input.split('-')[0]
+year = date.split('-')[0]
+
 for song in songs:
     result = sp.search(q=f"track:{song} year:{year}", type="track")
-    print(result)
+    # print(result)
     try:
         uri = result["tracks"]["items"][0]["uri"]
         song_uris.append(uri)
     except IndexError:
         print(f"{song} doesn't exist on Spotify. Skipped")
+
+playlist = sp.user_playlist_create(user=user_id, name=f"{date} Billboard 100", public=False)
+sp.playlist_add_items(playlist_id=playlist["id"], items=song_uris)
